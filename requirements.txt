@@ -1,5 +1,6 @@
 pygwalker
 streamlit
 pandas
-SQLAlchemy
 mysql-connector-python
+sqlalchemy
+psycopg2
