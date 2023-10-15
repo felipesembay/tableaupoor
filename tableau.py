@@ -60,7 +60,8 @@ def delete_duplicate_columns(df):
                 st.warning("O DataFrame não possui colunas para excluir.")
 
 def connect_to_postgres(host, user, password, port, database_name, query):
-    engine = create_engine(f"postgresql://{user}:{password}@{host}:{port}/{database_name}")
+    # Use psycopg2 como o driver para PostgreSQL
+    engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database_name}")
     return pd.read_sql_query(query, con=engine)
 
 
