@@ -5,5 +5,9 @@ mysql-connector-python==8.0.32
 sqlalchemy==1.4.39
 psycopg2-binary==2.9.1
 pymssql==2.2.9
+beautifulsoup4==4.11.1
+pathlib==1.0.1
+shutil
+logging
 
 

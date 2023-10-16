@@ -5,6 +5,10 @@ import streamlit as st
 import psycopg2
 import mysql.connector
 import pymssql
+import pathlib
+import shutil
+import logging
+from bs4 import BeautifulSoup
 
 def load_data(file_picker):
     if file_picker is not None:
@@ -77,7 +81,6 @@ def connect_to_postgres(host, user, password, port, database_name, query):
         if 'connection' in locals() and connection is not None:
             connection.close()
 
-
 def connect_to_mysql(host, user, password, port, database_name, query):
     try:
         connection = mysql.connector.connect(host=host, user=user, password=password, port=port, database=database_name)
@@ -102,6 +105,37 @@ def connect_to_sql_server(host, user, password, port, database_name, query):
         if 'connection' in locals() and connection is not None:
             connection.close()
 
+def inject_ga():
+    GA_ID = "google_analytics"
+
+    # Note: Por favor, substitua o ID de "G-XXXXXXXXXX" pelo ID do seu aplicativo da web
+    # no Google Analytics. Você encontrará isso em sua conta do Google Analytics.
+
+    GA_JS = """
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-20S9K4G7X6');
+    </script>
+    """
+
+    # Insira o script na tag head do modelo estático dentro do seu ambiente virtual
+    index_path = pathlib.Path(st.__file__).parent / "static" / "index.html"
+    logging.info(f'editando {index_path}')
+    soup = BeautifulSoup(index_path.read_text(), features="html.parser")
+    if not soup.find(id=GA_ID):  # se não encontrar a tag
+        bck_index = index_path.with_suffix('.bck')
+        if bck_index.exists():
+            shutil.copy(bck_index, index_path)  # recupere a partir do backup
+        else:
+            shutil.copy(index_path, bck_index)  # mantenha um backup
+        html = str(soup)
+        new_html = html.replace('<head>', '<head>\n' + GA_JS)
+        index_path.write_text(new_html)
+
 def main():
     st.set_page_config(
         page_title="Tableau Poor",
@@ -109,8 +143,8 @@ def main():
     )
 
     st.title("Tableau Poor - o seu software de Dataviz gratuito")
-    # Use components.html para incorporar o código no seu aplicativo
-    components.html(open('google_tags.html').read(), height=0)
+    
+    inject_ga()  # Injete o código do Google Analytics
 
     database = st.sidebar.selectbox("Selecione o banco de dados:", ["CSV/XLSX", "Postgres", "MySQL", "SQL Server"])
 
@@ -148,7 +182,6 @@ def main():
 
     pyg_html = pyg.walk(df, return_html=True, hideDataSourceConfig=False)
     components.html(pyg_html, height=1000, scrolling=True)
-
 
 if __name__ == "__main__":
     main()
