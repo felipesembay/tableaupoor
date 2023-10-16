@@ -6,7 +6,6 @@ import psycopg2
 import mysql.connector
 import pymssql
 
-
 def load_data(file_picker):
     if file_picker is not None:
         try:
@@ -16,7 +15,6 @@ def load_data(file_picker):
         except UnicodeDecodeError:
             st.error("Erro ao abrir o arquivo. Verifique a codificação correta.")
             return None
-
 
 def handle_null_values(df):
     st.subheader("Verificar e Tratar Dados Nulos")
@@ -40,7 +38,6 @@ def handle_null_values(df):
                     df[col].fillna(df[col].median(), inplace=True)
                 elif fill_value.lower() in ['moda', 'mode']:
                     df[col].fillna(df[col].mode()[0], inplace=True)
-
 
 def delete_duplicate_columns(df):
     st.subheader("Excluir ou Duplicar Colunas")
@@ -68,7 +65,6 @@ def delete_duplicate_columns(df):
             else:
                 st.warning("O DataFrame não possui colunas para excluir.")
 
-
 def connect_to_postgres(host, user, password, port, database_name, query):
     try:
         connection = psycopg2.connect(host=host, user=user, password=password, port=port, database=database_name)
@@ -93,8 +89,7 @@ def connect_to_mysql(host, user, password, port, database_name, query):
     finally:
         if 'connection' in locals() and connection is not None:
             connection.close()
-
-
+            
 def connect_to_sql_server(host, user, password, port, database_name, query):
     try:
         connection = pymssql.connect(host=host, user=user, password=password, port=port, database=database_name)
@@ -107,29 +102,15 @@ def connect_to_sql_server(host, user, password, port, database_name, query):
         if 'connection' in locals() and connection is not None:
             connection.close()
 
-
 def main():
     st.set_page_config(
         page_title="Tableau Poor",
         layout="wide"
     )
-        # Insira o código da Tag GA4 aqui
-    google_analytics_code = """
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-20S9K4G7X6"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-20S9K4G7X6');
-    </script>
-    """
-
-    # Use components.html para incorporar o código no seu aplicativo
-    components.html(google_analytics_code)
 
     st.title("Tableau Poor - o seu software de Dataviz gratuito")
+    # Use components.html para incorporar o código no seu aplicativo
+    components.html(open('google_tags.html').read(), height=0)
 
     database = st.sidebar.selectbox("Selecione o banco de dados:", ["CSV/XLSX", "Postgres", "MySQL", "SQL Server"])
 
