@@ -2,17 +2,26 @@ import pygwalker as pyg
 import streamlit.components.v1 as components
 import pandas as pd
 import streamlit as st
-from sqlalchemy import create_engine
+import psycopg2
 import mysql.connector
+import pymssql
+
 
 def load_data(file_picker):
     if file_picker is not None:
-        return pd.read_csv(file_picker)
+        try:
+            # Especifique a codificação (por exemplo, 'ISO-8859-1') ao carregar o arquivo CSV
+            df = pd.read_csv(file_picker, encoding='ISO-8859-1')
+            return df
+        except UnicodeDecodeError:
+            st.error("Erro ao abrir o arquivo. Verifique a codificação correta.")
+            return None
+
 
 def handle_null_values(df):
     st.subheader("Verificar e Tratar Dados Nulos")
 
-    if df is not None and not df.empty:  # Adicione esta verificação
+    if df is not None and not df.empty:
         show_nulls = st.checkbox("Mostrar Dados Nulos")
         if show_nulls:
             st.dataframe(df.isnull().sum())
@@ -23,7 +32,6 @@ def handle_null_values(df):
             for col in null_cols:
                 fill_value = st.text_input(f"Valor para preencher nulos em '{col}':", "")
                 if fill_value.lower() == 'manual':
-                    # Preencher manualmente
                     manual_fill = st.text_input(f"Preencher '{col}' manualmente com:")
                     df[col].fillna(manual_fill, inplace=True)
                 elif fill_value.lower() in ['media', 'mean']:
@@ -33,13 +41,14 @@ def handle_null_values(df):
                 elif fill_value.lower() in ['moda', 'mode']:
                     df[col].fillna(df[col].mode()[0], inplace=True)
 
+
 def delete_duplicate_columns(df):
     st.subheader("Excluir ou Duplicar Colunas")
 
     if df is not None and not df.empty:
         show_duplicates = st.checkbox("Mostrar Colunas Duplicadas")
         if show_duplicates:
-            if not df.columns.empty and df.columns.duplicated().any():  # Verifique se existem colunas e se há duplicatas
+            if not df.columns.empty and df.columns.duplicated().any():
                 duplicated_cols = df.columns[df.columns.duplicated()]
                 st.write(duplicated_cols)
             else:
@@ -53,42 +62,62 @@ def delete_duplicate_columns(df):
 
         delete_col = st.checkbox("Excluir Coluna Específica")
         if delete_col:
-            if not df.columns.empty:  # Verifique se existem colunas antes de prosseguir
+            if not df.columns.empty:
                 col_to_delete = st.multiselect("Selecione a coluna para excluir:", df.columns)
                 df.drop(col_to_delete, axis=1, inplace=True)
             else:
                 st.warning("O DataFrame não possui colunas para excluir.")
 
+
 def connect_to_postgres(host, user, password, port, database_name, query):
-    # Use psycopg2 como o driver para PostgreSQL
-    engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database_name}")
-    return pd.read_sql_query(query, con=engine)
+    try:
+        connection = psycopg2.connect(host=host, user=user, password=password, port=port, database=database_name)
+        df = pd.read_sql(query, connection)
+        return df
+    except psycopg2.Error as e:
+        st.error(f"Erro ao conectar ao banco de dados PostgreSQL: {str(e)}")
+        return None
+    finally:
+        if 'connection' in locals() and connection is not None:
+            connection.close()
 
 
 def connect_to_mysql(host, user, password, port, database_name, query):
-    connection = mysql.connector.connect(host=host, user=user, passwd=password, port=port, database=database_name)
-    df = pd.read_sql(query, connection)
-    connection.close()
-    return df
+    try:
+        connection = mysql.connector.connect(host=host, user=user, password=password, port=port, database=database_name)
+        df = pd.read_sql(query, connection)
+        return df
+    except mysql.connector.Error as e:
+        st.error(f"Erro ao conectar ao banco de dados MySQL: {str(e)}")
+        return None
+    finally:
+        if 'connection' in locals() and connection is not None:
+            connection.close()
+
 
 def connect_to_sql_server(host, user, password, port, database_name, query):
-    engine = create_engine(f"mssql+pymssql://{user}:{password}@{host}:{port}/{database_name}")
-    return pd.read_sql_query(query, con=engine)
+    try:
+        connection = pymssql.connect(host=host, user=user, password=password, port=port, database=database_name)
+        df = pd.read_sql(query, connection)
+        return df
+    except pymssql.Error as e:
+        st.error(f"Erro ao conectar ao banco de dados SQL Server: {str(e)}")
+        return None
+    finally:
+        if 'connection' in locals() and connection is not None:
+            connection.close()
 
 
 def main():
-    # Adjust the width of the Streamlit page
     st.set_page_config(
         page_title="Tableau Poor",
         layout="wide"
     )
 
-    # Add Title
     st.title("Tableau Poor - o seu software de Dataviz gratuito")
 
-    # Adicione um selectbox para escolher o banco de dados
     database = st.sidebar.selectbox("Selecione o banco de dados:", ["CSV/XLSX", "Postgres", "MySQL", "SQL Server"])
-    
+
     df = None
 
     if database != "CSV/XLSX":
@@ -98,10 +127,10 @@ def main():
         port = st.sidebar.number_input("Port:", step=1)
         database_name = st.sidebar.text_input("Database:")
         query = st.text_area("Query:")
-        
+
         authenticate_button = st.checkbox("Autenticar e Conectar")
         if authenticate_button:
-            try:
+            if host and user and password and port and database_name and query:
                 if database == "Postgres":
                     df = connect_to_postgres(host, user, password, port, database_name, query)
                 elif database == "MySQL":
@@ -109,33 +138,21 @@ def main():
                 elif database == "SQL Server":
                     df = connect_to_sql_server(host, user, password, port, database_name, query)
 
-                # Exibir dados
-                if 'df' in locals():  # Verifique se df já foi criado
-                    df = df  # Substituir df existente
-                else:
+                if df is not None:
                     st.dataframe(df)
-            except Exception as e:
-                st.error(f"Erro ao conectar ao banco de dados: {str(e)}")
-
-            finally:
-                if 'engine' in locals():
-                    engine.dispose()  # Certifique-se de fechar a conexão
+            else:
+                st.warning("Preencha todos os campos obrigatórios.")
 
     else:
         file_picker = st.file_uploader("Selecione um arquivo", type=["csv", "xlsx"])
         df = load_data(file_picker)
 
-    # Handle null values
     handle_null_values(df)
-
-    # Delete or duplicate columns
     delete_duplicate_columns(df)
 
-    # Generate the HTML using Pygwalker
     pyg_html = pyg.walk(df, return_html=True, hideDataSourceConfig=False)
-
-    # Embed the HTML into the Streamlit app
     components.html(pyg_html, height=1000, scrolling=True)
+
 
 if __name__ == "__main__":
     main()
