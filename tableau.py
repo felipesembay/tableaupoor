@@ -6,6 +6,21 @@ import psycopg2
 import mysql.connector
 import pymssql
 
+google_analytics_code = """
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-20S9K4G7X6"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-20S9K4G7X6');
+</script>
+"""
+
+# Use components.html para incorporar o código no seu aplicativo
+components.html(google_analytics_code)
+
 
 def load_data(file_picker):
     if file_picker is not None:
@@ -115,22 +130,6 @@ def main():
     )
 
     st.title("Tableau Poor - o seu software de Dataviz gratuito")
-    
-    # Insira o código da Tag GA4 aqui
-    google_analytics_code = """
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-20S9K4G7X6"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-20S9K4G7X6');
-    </script>
-    """
-
-    # Use components.html para incorporar o código no seu aplicativo
-    components.html(google_analytics_code)
 
     database = st.sidebar.selectbox("Selecione o banco de dados:", ["CSV/XLSX", "Postgres", "MySQL", "SQL Server"])
 
