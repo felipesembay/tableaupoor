@@ -100,27 +100,12 @@ def connect_to_sql_server(host, user, password, port, database_name, query):
     finally:
         if 'connection' in locals() and connection is not None:
             connection.close()
-
-
 def main():
     st.set_page_config(
         page_title="Tableau Poor",
         layout="wide")
 
     st.title("Tableau Poor - o seu software de Dataviz gratuito")
-    
-    takip="""
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-20S9K4G7X6"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-20S9K4G7X6');
-</script>
-"""
-    components.html(takip, width=1, height=1)
 
     database = st.sidebar.selectbox("Selecione o banco de dados:", ["CSV/XLSX", "Postgres", "MySQL", "SQL Server"])
 
@@ -157,7 +142,7 @@ def main():
     delete_duplicate_columns(df)
 
     pyg_html = pyg.walk(df, return_html=True, hideDataSourceConfig=False)
-    components.html(pyg_html, height=1000, scrolling=True)
+    components.html(pyg_html, height=1500, scrolling=True)
 
 if __name__ == "__main__":
     main()
