@@ -5,10 +5,6 @@ import streamlit as st
 import psycopg2
 import mysql.connector
 import pymssql
-import pathlib
-import shutil
-import logging
-from bs4 import BeautifulSoup
 
 def load_data(file_picker):
     if file_picker is not None:
